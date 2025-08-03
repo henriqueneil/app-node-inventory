@@ -1,7 +1,7 @@
-import { Product } from '../models/product.model';
-
-export interface ProductDB extends Product {}
-
+/**
+ * Defines the product collection schema for the database.
+ * This schema is used to validate and structure product data stored in the database.
+ */
 export const productCollection = {
   products: {
     schema: {

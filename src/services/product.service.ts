@@ -1,10 +1,34 @@
 import { Product } from '../models/product.model';
 import { getDatabase } from '../database/rxdb';
 import { escapeRegExp } from '../utils/regex';
+import { pickFields } from '../utils/json.utils';
 
+/**
+ * ProductService provides methods to interact with the product database.
+ * It allows finding products based on various filters, retrieving a product by ID,
+ * and adding new products to the database.
+ * * @class ProductService
+ * * @author Henrique de Oliveira
+ * @property {string[]} findQueryFields - Fields to include in the product query results.
+ * * @method findProducts - Finds products based on the provided filters.
+ * * @param {Object} filters - Filters to apply when searching for products.
+ * * @returns {Promise<Product[]>} - A promise that resolves to an array of products matching the filters.
+ * * @method getProductById - Retrieves a product by its ID.
+ * * @param {string} id - The ID of the product to retrieve.
+ * * @returns {Promise<Product>} - A promise that resolves to the product with the specified ID.
+ * * @method addProduct - Adds a new product to the database.
+ * * @param {Product} product - The product to add.
+ * * @returns {Promise<Product>} - A promise that resolves to the added product with its ID.
+ */
 export class ProductService {
   findQueryFields = ['id', 'name', 'category', 'brand', 'price', 'description'];
 
+  /**
+   * Finds products based on the provided filters.
+   *
+   * @param filters
+   * @Returns {Promise<Product[]>} - A promise that resolves to an array of products matching the filters.
+   */
   async findProducts(filters: {
     name?: string;
     category?: string;
@@ -41,18 +65,15 @@ export class ProductService {
     // Execute the query
     const products = await query.exec();
 
-    return products.map(product => this.pickFields(product.toJSON(), this.findQueryFields));
+    return products.map(product => pickFields(product.toJSON(), this.findQueryFields));
   }
 
-  pickFields(obj: any, fields: string[]) {
-    return fields.reduce((result, field) => {
-      if (obj[field] !== undefined) {
-        result[field] = obj[field];
-      }
-      return result;
-    }, {} as any);
-  }
-
+  /**
+   * Retrieves a product by its ID.
+   *
+   * @param id - The ID of the product to retrieve.
+   * @returns {Promise<Product>} - A promise that resolves to the product with the specified ID.
+   */
   async getProductById(id: string) {
     const database = await getDatabase();
 
@@ -67,6 +88,12 @@ export class ProductService {
     return product;
   }
 
+  /**
+   * Adds a new product to the database.
+   *
+   * @param product - The product to add.
+   * @returns {Promise<Product>} - A promise that resolves to the added product with its ID.
+   */
   async addProduct(product: Product): Promise<Product> {
     const database = await getDatabase();
 

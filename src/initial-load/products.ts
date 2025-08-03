@@ -1,5 +1,8 @@
 import { Product } from '../models/product.model';
 
+/**
+ * Initial product data for the application.
+ */
 export const products: Product[] = [
   {
     id: '00001',

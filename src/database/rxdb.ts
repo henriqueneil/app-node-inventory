@@ -5,6 +5,10 @@ import { productCollection } from './product.db';
 import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder';
 import { products } from '../initial-load/products';
 
+/**
+ * This file sets up the RxDB database for the inventory application.
+ * It initializes the database, adds the product collection, and populates it with initial data if
+ */
 addRxPlugin(RxDBQueryBuilderPlugin);
 export const idbStorage = getRxStorageMemory();
 
