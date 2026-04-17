@@ -1,34 +1,46 @@
-import express from 'express';
+import express, { Router } from 'express';
 import productRouter from './apis/products.api';
+import categoryRouter from './apis/categories.api';
+import brandRouter from './apis/brands.api';
 import { webcrypto } from 'crypto';
+
+if (!globalThis.crypto) {
+  globalThis.crypto = webcrypto as unknown as Crypto;
+}
 
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
-app.use('/api', productRouter);
+// Track mount paths explicitly since Express 5 no longer stores them on the layer.
+const routerMounts = new Map<Router, string>();
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
-
-// Middleware to log available routes dynamically
-if (app._router && Array.isArray(app._router.stack)) {
-  app._router.stack.forEach((middleware: any) => {
-    if (middleware.route) {
-      // Routes registered directly on the app
-      console.log(`${Object.keys(middleware.route.methods).join(', ').toUpperCase()} ${middleware.route.path}`);
-    } else if (middleware.name === 'router' && middleware.handle && Array.isArray(middleware.handle.stack)) {
-      // Routes added as a router
-      middleware.handle.stack.forEach((handler: any) => {
-        if (handler.route) {
-          console.log(`${Object.keys(handler.route.methods).join(', ').toUpperCase()} ${handler.route.path}`);
-        }
-      });
-    }
-  });
+function mountRouter(path: string, router: Router): void {
+  routerMounts.set(router, path);
+  app.use(path, router);
 }
 
-if (!globalThis.crypto) {
-  globalThis.crypto = webcrypto as unknown as Crypto;
+app.use(express.json());
+mountRouter('/api', productRouter);
+mountRouter('/api', categoryRouter);
+mountRouter('/api', brandRouter);
+
+app.listen(PORT, () => {
+  console.log(`\nServer is running on http://localhost:${PORT}`);
+  console.log('\nAvailable endpoints:');
+  printRoutes((app as any).router?.stack ?? [], '');
+  console.log('');
+});
+
+function printRoutes(stack: any[], parentPath: string): void {
+  for (const layer of stack) {
+    if (layer.route) {
+      const methods = Object.keys(layer.route.methods)
+        .map((m: string) => m.toUpperCase())
+        .join(', ');
+      console.log(`  [${methods}] http://localhost:${PORT}${parentPath}${layer.route.path}`);
+    } else if (layer.handle?.stack) {
+      const mountPath = routerMounts.get(layer.handle) ?? '';
+      printRoutes(layer.handle.stack, parentPath + mountPath);
+    }
+  }
 }

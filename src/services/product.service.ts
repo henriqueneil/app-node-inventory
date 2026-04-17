@@ -38,19 +38,26 @@ export class ProductService {
   }) {
     const db = await getDatabase();
 
-    // Start building the query selector
-    const selector: any = {};
-
     let query = db.collections.products.find();
 
     if (filters.name) {
-      query = query.where('name').regex(escapeRegExp(filters.name));
+      query = query.where('name').regex({ $regex: escapeRegExp(filters.name), $options: 'i' });
     }
     if (filters.brand) {
-      query = query.where('brand').eq(filters.brand);
+      const brands = filters.brand.split(',').map(v => v.trim()).filter(Boolean);
+      if (brands.length === 1) {
+        query = query.where('brand').regex({ $regex: `^${escapeRegExp(brands[0])}$`, $options: 'i' });
+      } else if (brands.length > 1) {
+        query = (query as any).where('brand').in(brands);
+      }
     }
     if (filters.category) {
-      query = query.where('category').eq(filters.category);
+      const categories = filters.category.split(',').map(v => v.trim()).filter(Boolean);
+      if (categories.length === 1) {
+        query = query.where('category').regex({ $regex: `^${escapeRegExp(categories[0])}$`, $options: 'i' });
+      } else if (categories.length > 1) {
+        query = (query as any).where('category').in(categories);
+      }
     }
 
     if (filters.minPrice !== undefined) {
@@ -62,7 +69,6 @@ export class ProductService {
 
     query = query.sort({ price: 'asc' });
 
-    // Execute the query
     const products = await query.exec();
 
     return products.map(product => pickFields(product.toJSON(), this.findQueryFields));
